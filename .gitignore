@@ -1,2 +1,5 @@
 **/__pycache__
 **/.~lock.**
+model/*
+log/*
+**/finetuned-model/*
