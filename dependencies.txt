@@ -1,0 +1,13 @@
+pip install numpy==1.26.4
+pip install pandas==2.2.3
+pip install torch==2.6.0+cu124
+pip install transformers==4.52.4
+pip install accelerate==1.8.1
+pip install tqdm==4.67.1
+pip install torchmetrics==1.7.3
+pip install torchinfo==1.8.0
+pip install peft==0.15.2
+pip install datasets==3.6.0
+pip install evaluate
+pip install bitsandbytes
+pip install lightning
