@@ -3,3 +3,6 @@
 model/*
 log/*
 **/finetuned-model/*
+src/lightning_logs/*
+src/logs/*
+src/training_outputs/*
