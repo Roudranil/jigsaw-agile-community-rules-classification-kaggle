@@ -1,0 +1,14 @@
+numpy
+pandas
+matplotlib
+scikit-learn
+torch
+transformers
+markdown2
+tqdm
+beautifulsoup4
+lightning
+torchmetrics
+torchinfo
+evaluate
+datasets
