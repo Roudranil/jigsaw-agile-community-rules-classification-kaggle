@@ -55,7 +55,11 @@ def sanitize_comment(comment):
 
 
 def create_master_dataset(
-    train: pd.DataFrame, test: pd.DataFrame, logger: Optional[logging.Logger] = None
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    logger: Optional[logging.Logger] = None,
+    positive_examples_to_consider: list = [1, 2],
+    negative_example_to_consider: list = [1, 2],
 ) -> pd.DataFrame:
     if logger:
         logger.info("Starting master dataset creation")
@@ -80,7 +84,7 @@ def create_master_dataset(
         records = []
 
         # For positive examples
-        for i in [1, 2]:
+        for i in positive_examples_to_consider:
             col = f"{prefix_pos}{i}"
             # Ensure column exists and drop NA
             if col in df.columns:
@@ -100,7 +104,7 @@ def create_master_dataset(
                     )
 
         # For negative examples
-        for i in [1, 2]:
+        for i in negative_example_to_consider:
             col = f"{prefix_neg}{i}"
             if col in df.columns:
                 subdf = df[["rule", "subreddit", col]].dropna(subset=[col])
@@ -328,10 +332,26 @@ def _map_lookup(example, rule_lookup, subreddit_lookup):
 
 
 def add_classification_preds_rule_subreddit(
-    df, rule_lookup=None, subreddit_lookup=None, logger=None
+    df,
+    rule_vectorizer,
+    rule_vecs,
+    features,
+    subreddit_classifier,
+    subreddits,
+    rule_lookup=None,
+    subreddit_lookup=None,
+    logger=None,
 ):
     if rule_lookup is None and subreddit_lookup is None:
-        rule_lookup, subreddit_lookup = _build_lookups(df, logger=logger)
+        rule_lookup, subreddit_lookup = _build_lookups(
+            df,
+            rule_vectorizer=rule_vectorizer,
+            rule_vecs=rule_vecs,
+            features=features,
+            subreddit_classifier=subreddit_classifier,
+            subreddits=subreddits,
+            logger=logger,
+        )
     result = df.map(
         partial(
             _map_lookup, rule_lookup=rule_lookup, subreddit_lookup=subreddit_lookup

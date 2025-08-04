@@ -1,19 +1,27 @@
+import gc
+import inspect
 import logging
+import os
 import sys
+import time
+import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
+
+import psutil
+import torch
 
 
 def clean_mem():
-    import gc
-    import os
-    import sys
-    import time
-    import traceback
+    # import gc
+    # import os
+    # import sys
+    # import time
+    # import traceback
 
-    import psutil
-    import torch
+    # import psutil
+    # import torch
 
     process = psutil.Process(os.getpid())
 
@@ -295,3 +303,92 @@ def setup_project_logging(debug_mode: bool = False) -> logging.Logger:
         log_dir="project_logs",
         include_timestamp_in_filename=True,
     )
+
+
+def get_ram_usage():
+    process = psutil.Process()
+    return process.memory_info().rss  # bytes
+
+
+def free_vars(
+    vars_to_delete: List[Union[str, object]],
+    namespace: Optional[dict] = None,
+    try_gpu: bool = True,
+    logger=None,
+):
+    """
+    Deletes variables by name or reference, frees RAM and GPU (PyTorch) memory,
+    logs actions via logger if provided.
+
+    Args:
+      vars_to_delete: list of variable names (str) or object refs
+      namespace: dict to remove names from (defaults to caller's globals())
+      try_gpu: clear GPU memory for torch objects
+      logger: logging object or None (use print)
+    Returns:
+      (freed_ram_bytes, freed_gpu_bytes)
+    """
+    # Setup logger if not provided
+    if logger is None:
+
+        def logger(msg):
+            print(msg)
+
+    else:
+        logger = logger.info
+
+    # Automatic namespace resolution
+    if namespace is None:
+        # Get frame of the caller, locals then globals
+        frame = inspect.currentframe().f_back
+        namespace = frame.f_globals
+
+    before_ram = get_ram_usage()
+    try:
+        import torch
+    except ImportError:
+        torch = None
+
+    freed_gpu_bytes = 0
+    torch_objs = []
+    deleted = []
+
+    for var in vars_to_delete:
+        if isinstance(var, str):
+            obj = namespace.get(var, None)
+            if obj is not None:
+                deleted.append(var)
+                if torch and try_gpu:
+                    torch_objs.append(obj)
+                del namespace[var]
+                logger(f"Deleted variable '{var}'")
+            else:
+                logger(f"Variable '{var}' not found in namespace")
+        else:
+            # Try to remove all names referencing the object
+            names = [n for n, v in namespace.items() if v is var]
+            for n in names:
+                del namespace[n]
+                deleted.append(n)
+                logger(f"Deleted variable '{n}' (by reference)")
+            if not names:
+                logger(
+                    f"Could not find a variable name for object {var!r}, may not be deleted"
+                )
+            if torch and try_gpu:
+                torch_objs.append(var)
+
+    if torch and try_gpu and torch_objs and torch.cuda.is_available():
+        before_gpu = torch.cuda.memory_allocated()
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+        after_gpu = torch.cuda.memory_allocated()
+        freed_gpu_bytes = after_gpu - before_gpu
+        logger(f"GPU memory freed: {freed_gpu_bytes/(1024**2):.2f} MB")
+    # Always run gc
+    gc.collect()
+    after_ram = get_ram_usage()
+    freed_ram_bytes = after_ram - before_ram
+    logger(f"RAM memory freed: {freed_ram_bytes/(1024**2):.2f} MB")
+    clean_mem()
+    # return freed_ram_bytes, freed_gpu_bytes

@@ -7,7 +7,7 @@ from sklearn.metrics import roc_auc_score
 
 
 def column_averaged_auc(eval_pred, logger):
-    print(f"{type(eval_pred) = }")
+    logger.info(f"{type(eval_pred) = }")
     logits, labels = eval_pred
     logger.info(
         f"{type(logits) = } | {type(labels) = } | {logits.shape = } | {labels.shape = }"
