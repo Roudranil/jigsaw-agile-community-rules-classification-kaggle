@@ -6,3 +6,4 @@ log/*
 src/lightning_logs/*
 src/logs/*
 src/training_outputs/*
+src/rulewise-output/*
