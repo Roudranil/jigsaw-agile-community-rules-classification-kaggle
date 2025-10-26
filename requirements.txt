@@ -12,3 +12,4 @@ torchmetrics
 torchinfo
 evaluate
 datasets
+accelerate
